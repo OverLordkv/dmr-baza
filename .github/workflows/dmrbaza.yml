@@ -12,6 +12,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Skini user.csv sa radioid.net
         run: curl -fL --retry 3 -A "Mozilla/5.0" -o user.csv https://radioid.net/data/download/user.csv
+      - name: Provera preuzetog fajla
+        run: |
+          ls -l user.csv
+          echo "linija: $(wc -l < user.csv)"
+          head -3 user.csv
+          test "$(wc -l < user.csv)" -gt 100000
       - name: Napravi baze
         run: |
           python3 make_dmrdb.py user.csv dmr.bin --prefix 220 219 218 297 293 294

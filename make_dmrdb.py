@@ -50,9 +50,9 @@ def main():
         if has_header:
             names=[c.strip().upper().lstrip('#') for c in first]
             cols={n:i for i,n in enumerate(names)}
-            iid=cols.get('RADIO_ID',cols.get('ID',0)); ics=cols.get('CALLSIGN',1); ifn=cols.get('FIRST_NAME',cols.get('NAME',2)); ico=cols.get('COUNTRY')
+            iid=cols.get('RADIO_ID',cols.get('ID',0)); ics=cols.get('CALLSIGN',1); ifn=cols.get('FIRST_NAME',cols.get('NAME',2)); ico=cols.get('COUNTRY'); icy=cols.get('CITY')
         else:
-            iid,ics,ifn,ico=0,1,2,None
+            iid,ics,ifn,ico,icy=0,1,2,None,None
             rows=[first]
         def rows_iter():
             if not has_header: yield first
@@ -64,8 +64,9 @@ def main():
             if a.prefix and not any(str(rid).startswith(p) for p in a.prefix): continue
             if a.country and ico is not None:
                 if r[ico].strip().lower() not in [c.lower() for c in a.country]: continue
-            cs=ascii_only(r[ics],8); nm=ascii_only(r[ifn].split(' ')[0] if len(r)>ifn else '',16)
-            if cs: recs[rid]=(cs,nm)
+            cs=ascii_only(r[ics],8); nm=ascii_only(r[ifn].split(' ')[0] if len(r)>ifn else '',14)
+            cy=ascii_only(r[icy],14) if (icy is not None and len(r)>icy) else ''
+            if cs: recs[rid]=(cs,nm,cy)
     prio=set()
     if a.ids:
         for ln in open(a.ids,encoding='utf-8',errors='replace'):
@@ -81,11 +82,11 @@ def main():
         ids=sorted(sorted(ids,key=rank)[:a.max])
         print(f'Skraceno na {a.max} zapisa (prioritet: --ids, pa redom --prefix)')
     with open(a.dst,'wb') as o:
-        o.write(b'DMRDB001'+struct.pack('<I',len(ids))+b'\0\0\0\0')
+        o.write(b'DMRDB002'+struct.pack('<I',len(ids))+b'\0\0\0\0')
         for i in ids:
-            cs,nm=recs[i]
-            o.write(struct.pack('<I',i)+cs.encode().ljust(8,b'\0')+nm.encode().ljust(16,b'\0'))
-    size=16+28*len(ids)
+            cs,nm,cy=recs[i]
+            o.write(struct.pack('<I',i)+cs.encode().ljust(8,b'\0')+nm.encode().ljust(14,b'\0')+cy.encode().ljust(14,b'\0'))
+    size=16+40*len(ids)
     print(f'{len(ids)} zapisa, {size/1024:.0f} KB -> {a.dst}')
     if size>1200*1024: print('UPOZORENJE: fajl > 1.2 MB, moze da ne stane u SPIFFS (default particija ~1.5 MB).')
 

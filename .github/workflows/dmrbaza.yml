@@ -1,0 +1,28 @@
+name: Osvezi DMR bazu
+on:
+  schedule:
+    - cron: '17 3 * * *'     # svaki dan oko 03:17 UTC
+  workflow_dispatch: {}      # moze i rucno (dugme Run workflow)
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skini user.csv sa radioid.net
+        run: curl -fL --retry 3 -A "Mozilla/5.0" -o user.csv https://radioid.net/data/download/user.csv
+      - name: Napravi baze
+        run: |
+          python3 make_dmrdb.py user.csv dmr.bin --prefix 220 219 218 297 293 294
+          python3 make_all.py user.csv dmr_all.txt
+      - name: Objavi na grani data (bez gomilanja istorije)
+        run: |
+          mkdir out && cp dmr.bin dmr_all.txt out/
+          cd out
+          git init -q -b data
+          git config user.name "dmr-bot"
+          git config user.email "dmr-bot@users.noreply.github.com"
+          git add .
+          git commit -qm "DMR baza $(date -u +%F)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data

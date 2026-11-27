@@ -19,6 +19,8 @@ MAP = {'đ':'dj','Đ':'Dj','đ':'dj','š':'s','Š':'S','č':'c','Č':'C','ć':'c
 CYR = dict(zip('абвгдђежзијклљмнњопрстћуфхцчџш','a b v g d dj e z z i j k l lj m n nj o p r s t c u f h c c dz s'.split()))
 CYR['ж']='z'; CYR['з']='z'
 
+CSHORT={'United States':'USA','United Kingdom':'UK','Bosnia and Herzegovina':'Bosnia','North Macedonia':'N. Macedonia','Czech Republic':'Czechia','Russian Federation':'Russia','United Arab Emirates':'UAE','Republic of Korea':'S. Korea','Korea, Republic of':'S. Korea'}
+
 def ascii_only(s, n):
     out=[]
     for ch in s:
@@ -66,7 +68,9 @@ def main():
                 if r[ico].strip().lower() not in [c.lower() for c in a.country]: continue
             cs=ascii_only(r[ics],8); nm=ascii_only(r[ifn].split(' ')[0] if len(r)>ifn else '',14)
             cy=ascii_only(r[icy],14) if (icy is not None and len(r)>icy) else ''
-            if cs: recs[rid]=(cs,nm,cy)
+            co=(r[ico] if (ico is not None and len(r)>ico) else '').strip()
+            co=ascii_only(CSHORT.get(co,co),12)
+            if cs: recs[rid]=(cs,nm,cy,co)
     prio=set()
     if a.ids:
         for ln in open(a.ids,encoding='utf-8',errors='replace'):
@@ -82,11 +86,11 @@ def main():
         ids=sorted(sorted(ids,key=rank)[:a.max])
         print(f'Skraceno na {a.max} zapisa (prioritet: --ids, pa redom --prefix)')
     with open(a.dst,'wb') as o:
-        o.write(b'DMRDB002'+struct.pack('<I',len(ids))+b'\0\0\0\0')
+        o.write(b'DMRDB003'+struct.pack('<I',len(ids))+b'\0\0\0\0')
         for i in ids:
-            cs,nm,cy=recs[i]
-            o.write(struct.pack('<I',i)+cs.encode().ljust(8,b'\0')+nm.encode().ljust(14,b'\0')+cy.encode().ljust(14,b'\0'))
-    size=16+40*len(ids)
+            cs,nm,cy,co=recs[i]
+            o.write(struct.pack('<I',i)+cs.encode().ljust(8,b'\0')+nm.encode().ljust(14,b'\0')+cy.encode().ljust(14,b'\0')+co.encode().ljust(12,b'\0'))
+    size=16+52*len(ids)
     print(f'{len(ids)} zapisa, {size/1024:.0f} KB -> {a.dst}')
     if size>1200*1024: print('UPOZORENJE: fajl > 1.2 MB, moze da ne stane u SPIFFS (default particija ~1.5 MB).')
 

@@ -20,7 +20,7 @@ jobs:
           test "$(wc -l < user.csv)" -gt 100000
       - name: Napravi baze
         run: |
-          python3 make_dmrdb.py user.csv dmr.bin --prefix 220 219 218 297 293 294
+          python3 make_dmrdb.py user.csv dmr.bin --prefix 220 219 218 297 294 293 --max 2800
           python3 make_all.py user.csv dmr_all.txt
       - name: Objavi na grani data (bez gomilanja istorije)
         run: |
